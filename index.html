@@ -232,18 +232,23 @@
                 let subtopics = new Set();
                 
                 allProblems = rawJson.map((row, index) => {
-                    // Extract needed columns, checking common naming variations
                     const qHtml = row['questionHtml'] || row['QuestionHtml'] || row['QuestionHTML'] || row['Question'] || "No question HTML found.";
                     const subtopic = row['subtopic'] || row['Subtopic'] || "Uncategorized";
                     const subject = row['subject'] || row['Subject'] || "";
                     const chapter = row['chapter'] || row['Chapter'] || "";
                     
-                    // SMART SCANNER FOR CORRECT INDEX
+                    // SMART SCANNER FOR CORRECT INDEX (FIXED FOR '0')
                     let answer = "Not provided";
                     for (const key in row) {
-                        const normalizedKey = key.toLowerCase().replace(/\s+/g, ''); // Removes spaces and makes lowercase
+                        const normalizedKey = key.toLowerCase().replace(/\s+/g, '');
                         if (normalizedKey === 'correctindex' || normalizedKey === 'answer') {
-                            answer = row[key];
+                            let val = row[key];
+                            // If the column name implies an index and it's a number, convert 0-based to Option 1, 2, etc.
+                            if (normalizedKey.includes('index') && val !== "" && !isNaN(val)) {
+                                answer = "Option " + (parseInt(val) + 1);
+                            } else {
+                                answer = val;
+                            }
                             break;
                         }
                     }
@@ -332,7 +337,12 @@
         function toggleAnswer() {
             const ansDiv = document.getElementById('answer-display');
             if (ansDiv.classList.contains('hidden')) {
-                document.getElementById('answer-value').innerText = window.currentAnswer || "Not Found";
+                // Ensure 0, null, or empty string are properly handled
+                let displayVal = window.currentAnswer;
+                if (displayVal === "" || displayVal === null || displayVal === undefined) {
+                    displayVal = "Not Found";
+                }
+                document.getElementById('answer-value').innerText = displayVal;
                 ansDiv.classList.remove('hidden');
             } else {
                 ansDiv.classList.add('hidden');
